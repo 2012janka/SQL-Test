@@ -1,0 +1,234 @@
+CREATE TABLE Game
+(
+id_hra INT PRIMARY KEY,
+nazov VARCHAR2(35) NOT NULL,
+autor VARCHAR2(30) NOT NULL,
+datumPridaniaHry DATE,
+url VARCHAR2(250)
+);
+
+-------------------------------------------------------------------
+
+CREATE TABLE USERS
+(
+id_user INTEGER PRIMARY KEY,
+meno VARCHAR2(10) NOT NULL UNIQUE,
+heslo VARCHAR2(12) NOT NULL,
+email VARCHAR2(20) NOT NULL UNIQUE,
+datum DATE NOT NULL
+);
+
+-------------------------------------------------------------------
+
+CREATE TABLE SCORE
+(
+id_score INTEGER PRIMARY KEY,
+score NUMBER(5),
+datum DATE NOT NULL,
+id_hra INTEGER,
+id_user INTEGER,						
+FOREIGN KEY(id_hra)																
+REFERENCES game(id_hra),															
+FOREIGN KEY(id_user)																
+REFERENCES users(id_user)	
+);
+
+-------------------------------------------------------------------
+
+CREATE TABLE RATING
+(
+id_rating INTEGER PRIMARY KEY,
+rating NUMBER(5),
+datum DATE NOT NULL,
+id_hra INTEGER,
+id_user INTEGER UNIQUE,
+CHECK(rating <= 5 AND rating >= 1),
+FOREIGN KEY(id_hra)																
+REFERENCES game(id_hra),															
+FOREIGN KEY(id_user)																
+REFERENCES users(id_user)	
+);
+
+-------------------------------------------------------------------
+
+CREATE TABLE COMMENTS
+(
+id_comment INTEGER PRIMARY KEY,
+komentar VARCHAR2(500),
+datum DATE NOT NULL,
+id_user INTEGER,
+id_hra INTEGER,
+				
+FOREIGN KEY(id_user)											
+REFERENCES users(id_user),
+FOREIGN KEY(id_hra)											
+REFERENCES game(id_hra)	
+);
+
+--------------------------------------------------------------------------------------
+
+CREATE SEQUENCE indexes START WITH 1 INCREMENT BY 1;
+
+---------------------------------------------------------------------------------------
+
+insert into Game 
+values (indexes.nextval, 'Minesweeper', 'Janka','25/06/2015','www.minesweeper.com');
+
+insert into Game 
+values (indexes.nextval, 'Agar.io', 'Peto','20/05/2013','www.agar.io');
+
+insert into Game 
+values (indexes.nextval, 'Slither.io', 'Fero','20/12/2014','www.slither.io');
+
+insert into Game 
+values (indexes.nextval, 'Stones', 'Sasa','02/03/2016','www.stones.com');
+
+insert into Game 
+values (indexes.nextval, 'Solitaire', 'Peto','10/10/2012','www.solitaire.sk');
+
+
+---------------------------------------------------------------------------------------
+
+insert into Users
+values (indexes.nextval, 'Jano', '112233','jano@gmail.com','12/05/2013');
+
+insert into Users
+values (indexes.nextval, 'Stano', 'stano123','stano2@gmail.com','11/10/2014');
+
+insert into Users
+values (indexes.nextval, 'Klara', 'klarka5','klarka@gmail.com','02/06/2014');
+
+insert into Users
+values (indexes.nextval, 'Bara', '00001','bara1@gmail.com','05/03/2015');
+
+insert into Users
+values (indexes.nextval, 'Duro', 'd1u2r3o4','durooo@gmail.com','20/01/2016');
+
+---------------------------------------------------------------------------------------
+
+insert into Score
+values (indexes.nextval, 356, '12/06/2013', 1,6 );
+
+insert into Score
+values (indexes.nextval, 1024, '10/05/2014', 1,7 );
+
+insert into Score
+values (indexes.nextval, 12 , '05/08/2015', 2,8 );
+
+insert into Score
+values (indexes.nextval, 1010, '12/07/2015', 3,9 );
+
+insert into Score
+values (indexes.nextval, 120, '20/04/2016', 2,8 );
+
+---------------------------------------------------------------------------------------
+
+insert into Rating
+values (indexes.nextval, 1, '12/06/2013', 1,6 );
+
+insert into Rating
+values (indexes.nextval, 2, '13/05/2014', 1,7 );
+
+insert into Rating
+values (indexes.nextval,5 , '25/08/2015', 2,8 );
+
+insert into Rating
+values (indexes.nextval, 4, '20/07/2015', 3,9 );
+
+insert into Rating
+values (indexes.nextval, 3, '20/04/2016', 4, 10);
+
+---------------------------------------------------------------------------------------
+
+insert into Comments
+values (indexes.nextval, 'Very good game', '13/06/2013', 6, 1 );
+
+insert into Comments
+values (indexes.nextval, 'Boring', '11/05/2014', 8,2 );
+
+insert into Comments
+values (indexes.nextval, 'Excelent!!', '24/06/2014', 6,1 );
+
+insert into Comments
+values (indexes.nextval, 'Good', '20/12/2015', 9,3 );
+
+insert into Comments
+values (indexes.nextval, 'I dont like it', '10/04/2016', 10,5 );
+
+
+---------------------------------------------------------------------------------------
+CREATE INDEX indexHra
+ON game (nazov);
+
+CREATE INDEX indexUser
+ON users (meno);
+---------------------------------------------------------------------------------------
+
+1.    Zoznam hráèov utriedený pod¾a dátumu registrácie
+	create view v1 as
+	select * from users order by datum;
+
+2.    Zoznam hier
+	create view v2 as
+	select * from game;
+
+3.    Zoznam hier s komentármi a menami používate¾ov
+	create view v3 as
+	SELECT g.nazov, c.komentar, u.meno from comments c join game g ON c.ID_HRA = g.ID_HRA join 		users u on u.ID_USER = c.ID_USER;
+
+4.    Hráè s najdlhším menom
+	create view v4 as
+	select * from users where length(meno)=(select max(length(meno)) from users);
+
+5.    Zoznam hier, ktoré nehral nikto (nemajú záznam v Score)
+	create view v5 as
+	SELECT * FROM game g Left JOIN score s ON g.ID_HRA = s.ID_HRA WHERE s.ID_HRA IS NULL;
+
+6.    Zoznam používate¾ov, ktorí nehodnotili žiadnu hru
+	create view v6 as
+	SELECT * FROM users u Left JOIN rating r ON u.ID_USER = r.ID_USER WHERE r.ID_USER IS NULL;
+
+7.    Zoznam používate¾ov, ktorí nehodnotili jednu konkrétnu hru (napr. Minesweeper)
+	create view v7 as
+	SELECT * FROM users u JOIN rating r ON u.ID_USER = r.ID_USER where r.ID_HRA != 1;
+
+8.    Poèet hier, poèet hráèov, poèet komentárov, poèet hodnotení
+	create view v8 as
+	select * from 
+	(select count(*) as GAMECOUNT from game) natural join 
+	(select count(*) as USERCOUNT from users) natural join 
+	(select count(*) as RAITINGCOUNT from rating)natural join 
+	(select count(*) as COMMENTCOUNT from comments);
+
+	select*from v8;
+
+9.    Najstaršia hra
+	create view v9 as
+	select * from game where datumpridaniahry like (select min(datumpridaniahry) from game);
+
+10.   Zoznam hier s ich priemerným ratingom a poètom hodnotení
+	create view v10 as
+	SELECT g.nazov, avg(r.rating) as priemer, count(r.rating) as pocet_hodnoteni FROM game g 		JOIN rating r ON g.ID_HRA = r.ID_HRA group by g.nazov;
+
+11.   Najviac komentované hry
+	create view v11 as
+	SELECT g.nazov, (SELECT COUNT(*) FROM comments c WHERE c.ID_HRA = g.ID_HRA) AS 				pocet_komentarov FROM game g;
+
+	select*from v11 where v11.pocet_komentarov =(select max(pocet_komentarov) from v11);
+
+12.   Zoznam hráèov s ich poètom hraním hier a celkovým skóre, ktoré nahrali 
+	create view v12 as
+	Select u.meno, count(s.score) as pocet_hrani , sum(s.score) as celkove_skore from users u 		join score s on u.ID_USER = s.ID_USER GROUP BY u.meno; 
+
+13.   Meno hráèa, ktorý hral naposledy hru
+	create view v13 as
+	Select u.meno from users u join score s on u.ID_USER = s.ID_USER where s.DATUM=(select max		(datum) from score);
+
+
+14.   Poèet komentárov pre najob¾úbenejšiu hru
+
+
+15.   Mená hráèov s poètom komentárov, ktoré pridali k hrám
+	create view v15 as
+	Select u.meno, count(c.komentar) as pocet_komentarov from users u join comments c on 			u.ID_USER = c.ID_USER group by u.meno;
+
